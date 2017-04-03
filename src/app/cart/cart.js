@@ -35,27 +35,17 @@ function CartConfig($stateProvider) {
                         });
                     return dfd.promise;
                 },
-                ExistingOrder: function($q, OrderCloud, CurrentUser) {
-                    return OrderCloud.Me.ListOutgoingOrders(null, 1, 1, null, "!DateCreated", {Status:"Unsubmitted"})
-                        .then(function(data) {
-                            return data.Items[0];
+                CurrentPromotions: function(CurrentOrder, OrderCloud, AddRebate) {
+                    return AddRebate.ApplyPromo(CurrentOrder)
+                        .then(function(){
+                            return OrderCloud.Orders.ListPromotions(CurrentOrder.ID);
                         });
-                },
-                CurrentOrderCart: function(OrderCloud, ExistingOrder, NewOrder, AddRebate) {
-                    if (!ExistingOrder) {
-                        return NewOrder.Create({});
-                    } else {
-                        return AddRebate.ApplyPromo(ExistingOrder)
-                    }
-                },
-                CurrentPromotions: function(CurrentOrderCart, OrderCloud) {
-                    return OrderCloud.Orders.ListPromotions(CurrentOrderCart.ID);
                 }
             }
         });
 }
 
-function CartController($rootScope, $state, toastr, OrderCloud, LineItemsList, CurrentPromotions, CurrentOrderCart, ocConfirm, AddRebate, rebateCode) {
+function CartController($rootScope, $state, toastr, OrderCloud, LineItemsList, CurrentPromotions, CurrentOrder, ocConfirm, AddRebate, rebateCode) {
     var vm = this;
     vm.lineItems = LineItemsList;
     vm.promotions = CurrentPromotions.Meta ? CurrentPromotions.Items : CurrentPromotions;
@@ -67,7 +57,7 @@ function CartController($rootScope, $state, toastr, OrderCloud, LineItemsList, C
     vm.cancelOrder = cancelOrder;
 
     function updatePromo(){
-        return AddRebate.ApplyPromo(CurrentOrderCart);
+        return AddRebate.ApplyPromo(CurrentOrder);
     }
 
     function removeItem(order, scope) {
