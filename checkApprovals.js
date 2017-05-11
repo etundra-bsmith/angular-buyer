@@ -27,5 +27,12 @@ function sendMandrillEmail() {
     return deferred.promise;
 }
 
-sendMandrillEmail();
-process.exit();
+sendMandrillEmail()
+    .then(function(data){
+        console.log('data', data);
+        console.log('hit')
+    })
+    .catch(function(err){
+        console.log('err', err);
+        console.log('err hit');
+    })
