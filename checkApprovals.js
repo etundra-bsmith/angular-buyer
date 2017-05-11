@@ -11,7 +11,7 @@ function sendMandrillEmail() {
 
     var template_content = [{name: 'main', content: 'content'}];
     var message = {
-        to: ['cramirez@four51.com'],
+        to: [{email: 'cramirez@four51.com', type: 'to'}],
         global_merge_vars: null
     };
 
