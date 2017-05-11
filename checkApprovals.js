@@ -1,7 +1,7 @@
 var request = require('request');
 var q = require('q');
 var mandrill = require('mandrill-api/mandrill');
-var config = require('mandrill.config');
+var config = require('./mandrill.config');
 
 function sendMandrillEmail() {
     console.log('config', config);
