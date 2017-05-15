@@ -44,23 +44,15 @@ function LoginService($q, $window, $state, $cookies, toastr, OrderCloudSDK, ocRo
     }
 
     function _resetPassword(resetPasswordCredentials, verificationCode) {
-        var deferred = $q.defer();
 
         var passwordReset = {
-            ClientID: clientid,
+            clientID: clientid,
             Username: resetPasswordCredentials.ResetUsername,
             Password: resetPasswordCredentials.NewPassword
         };
 
-        OrderCloudSDK.PasswordResets.ResetPassword(verificationCode, passwordReset).
-            then(function() {
-                deferred.resolve();
-            })
-            .catch(function(ex) {
-                deferred.reject(ex);
-            });
+        return OrderCloudSDK.PasswordResets.ResetPasswordByVerificationCode(verificationCode, passwordReset);
 
-        return deferred.promise;
     }
 
     function _logout() {
