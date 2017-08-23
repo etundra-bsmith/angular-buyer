@@ -2,7 +2,7 @@ var router = require('express').Router();
 var q = require('q');
 var mandrill = require('mandrill-api/mandrill');
 var config = require('./config/mandrill');
-var dateformat = require('dateFormat');
+var dateformat = require('dateformat');
 
 router.route('/negativebalance')
     .post(function(req, res) {
