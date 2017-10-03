@@ -4,7 +4,7 @@ var boconfig = require('./routes/config/back-office-user');
 var OrderCloudSDK = require('./routes/config/ordercloud');
 var _ = require('underscore');
 var fs = require('fs');
-var dateformat = require('dateFormat');
+var dateformat = require('dateformat');
 var buyerid = JSON.parse(fs.readFileSync('./src/app/app.constants.json')).buyerid;
 
 var mandrill = require('mandrill-api/mandrill');
