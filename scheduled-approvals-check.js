@@ -3,17 +3,13 @@ var $q = require('q');
 var boconfig = require('./routes/config/back-office-user');
 var OrderCloudSDK = require('./routes/config/ordercloud');
 var _ = require('underscore');
-var fs = require('fs');
 var dateformat = require('dateformat');
-var buyerid = JSON.parse(fs.readFileSync('./src/app/app.constants.json')).buyerid;
 var chalk = require('chalk');
-
 var mandrill = require('mandrill-api/mandrill');
 var mandrillConfig = require('./routes/config/mandrill');
 var mandrill_client = new mandrill.Mandrill(mandrillConfig.apiKey);
 
 cLog('Preliminary Diagnostics: Checking Config');
-if(!buyerid) return cError('Missing buyerid from src/app/app.constants.json - EXIT PROCESS');
 if(!boconfig.ClientID) return cError('Missing ClientID for back office user from routes/config/back-office-user - EXIT PROCESS');
 if(!boconfig.ClientSecret) return cError('Missing ClientSecret for back office user from routes/config/back-office-user - EXIT PROCESS');
 if(!boconfig.scope) return cError('Missing scope for back office user from routes/config/back-office-user - EXIT PROCESS');
@@ -24,10 +20,10 @@ return setBackOfficeToken()
     .then(getOrdersAwaitingApproval)
     .then(getApprovingUsers)
     .then(function(emailData){
-        return $q.all([
-            emailUsers(emailData),
-            markComplete(emailData)
-        ]);
+        return emailUsers(emailData)
+            .then(function(){
+                return markComplete(emailData);
+            });
     });
 
 function getOrdersAwaitingApproval(){
@@ -62,13 +58,13 @@ function getApprovingUsers(orders){
         approvalQueue.push(function(){
             return OrderCloudSDK.Orders.ListApprovals('incoming', order.ID, {filters: {Status: 'Pending'}})
                 .then(function(approvals){
-                    cSuccess('Order approvals for ' + order.ID + ' retrieved');
+                    cSuccess('Order Approvals for ' + order.ID + ' retrieved');
                     var usersQueue = [];
                     _.each(approvals.Items, function(approval){
                         usersQueue.push(function(){
-                            return OrderCloudSDK.Users.List(buyerid, {pageSize: 100, userGroupID: approval.ApprovingGroupID})
+                            return OrderCloudSDK.Users.List(order.FromCompanyID, {pageSize: 100, userGroupID: approval.ApprovingGroupID})
                                 .then(function(userList){
-                                    cSuccess('Users in approving group ' +  approval.ApprovingGroupID + 'retrieved');
+                                    cSuccess('Successfully retrieved Users in approving group ' +  approval.ApprovingGroupID);
                                     order = _.pick(order, ['ID', 'FromUser', 'FromUserID', 'DateSubmitted']);
                                     var recipients = _.pluck(userList.Items, 'Email');
                                     return emailData[order.ID] = {
@@ -77,14 +73,14 @@ function getApprovingUsers(orders){
                                     };
                                 })
                                 .catch(function(){
-                                    cError('Failed to retrieve users in approving group ' + approval.ApprovingGroupID);
+                                    cError('Failed to retrieve Users in Approving Group: ' + approval.ApprovingGroupID);
                                 });
                         }());
                     });
                     return $q.all(usersQueue);
                 })
                 .catch(function(){
-                    return cError('Failed to retrieve approvals for ' + order.ID);
+                    return cError('Failed to retrieve Approvals for ' + order.ID);
                 });
         }());
     });
@@ -135,7 +131,15 @@ function markComplete(emailData){
     var orderids = _.keys(emailData);
     var queue = [];
     _.each(orderids, function(orderid){
-        return OrderCloudSDK.Orders.Patch('incoming', orderid, {xp: {Over48:'yes'}});
+        queue.push(function(){
+            return OrderCloudSDK.Orders.Patch('incoming', orderid, {xp: {Over48:'yes'}})
+                .then(function(){
+                    cSuccess('Order Marked Complete ' + orderid);
+                })
+                .catch(function(){
+                    cSuccess('Failure Marking Complete ' + orderid);
+                });
+        });
     });
     return $q.all(queue);
 }
@@ -164,7 +168,7 @@ function setBackOfficeToken(){
                 cError('Auth Error - confirm back-office-user information is correct', msg);
                 deferred.reject(msg);
             } else {
-                cSuccess('Token Retrieved');
+                cSuccess('Token retrieved');
                 var token = JSON.parse(body)['access_token'];
                 OrderCloudSDK.SetToken(token);
                 deferred.resolve();
