@@ -23,6 +23,9 @@ return setBackOfficeToken()
         return emailUsers(emailData)
             .then(function(){
                 return markComplete(emailData);
+            })
+            .catch(function(ex){
+                cError('Error emailing users', ex)
             });
     });
 
@@ -91,7 +94,7 @@ function getApprovingUsers(orders){
 }
 
 function emailUsers(emailData){
-    cLog('Builing up emails');
+    cLog('Building up emails');
     var queue = [];
     _.each(emailData, function(email){
         var arrayRecipients = _.map(email.Recipients, function(email){
