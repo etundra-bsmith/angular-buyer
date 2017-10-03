@@ -96,6 +96,7 @@ function getApprovingUsers(orders){
 function emailUsers(emailData){
     cLog('Building up emails');
     var queue = [];
+    cLog('Email Data : ' + emailData);
     _.each(emailData, function(email){
         var arrayRecipients = _.map(email.Recipients, function(email){
             return {email: email, type: 'to'};
