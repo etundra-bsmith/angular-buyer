@@ -118,7 +118,7 @@ function emailUsers(emailData){
                 .catch(function(){
                     return cError('Emails not sent to: ' + email.Recipients.join(','));
                 });
-        });
+        }());
     });
     return $q.all(queue)
         .then(function(){
@@ -139,7 +139,7 @@ function markComplete(emailData){
                 .catch(function(){
                     cSuccess('Failure Marking Complete ' + orderid);
                 });
-        });
+        }());
     });
     return $q.all(queue);
 }
