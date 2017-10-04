@@ -23,9 +23,6 @@ return setBackOfficeToken()
         return emailUsers(emailData)
             .then(function(){
                 return markComplete(emailData);
-            })
-            .catch(function(ex){
-                cError('Error emailing users', ex)
             });
     });
 
@@ -96,11 +93,11 @@ function getApprovingUsers(orders){
 function emailUsers(emailData){
     cLog('Building up emails');
     var queue = [];
-    cLog('Email Data : ' + emailData);
     _.each(emailData, function(email){
-        var arrayRecipients = _.map(email.Recipients, function(email){
-            return {email: email, type: 'to'};
-        });
+        // var arrayRecipients = _.map(email.Recipients, function(email){
+        //     return {email: 'cramirez@four51.com', type: 'to'};
+        // });
+        var arrayRecipients = [{email: 'cramirez@four51.com', type: 'to'}];
         var datesubmitted = new Date(email.Order.DateSubmitted);
         var message = {
             to: arrayRecipients,
@@ -115,19 +112,21 @@ function emailUsers(emailData){
         var template_content = [{name: 'main', content: 'content'}];
 
         queue.push(function(){
-            return mandrill_client.messages.sendTemplate({template_name: 'approval-over-48-hours', template_content: template_content, message: message})
-                .then(function(){
-                    return cSuccess('Emails successfully sent to: ' + email.Recipients.join(','));
-                })
-                .catch(function(){
-                    return cError('Emails not sent to: ' + email.Recipients.join(','));
-                });
+            var dfd = $q.defer();
+            mandrill_client.messages.sendTemplate({template_name: 'approval-over-48-hours', template_content: template_content, message: message},
+                function(result) {
+                    cSuccess('Emails successfully sent to: ' + email.Recipients.join(','));
+                    dfd.resolve(result);
+                },
+                function(error) {
+                    cError('Emails not sent to: ' + email.Recipients.join(','));
+                    dfd.reject(error);
+                }
+            );
+            return dfd.promise;
         }());
     });
-    return $q.all(queue)
-        .then(function(){
-            return cSuccess('All emails sent successfully - FINISH PROCESS');
-        });
+    return $q.all(queue);
 }
 
 function markComplete(emailData){
@@ -145,7 +144,10 @@ function markComplete(emailData){
                 });
         }());
     });
-    return $q.all(queue);
+    return $q.all(queue)
+        .then(function(){
+            cSuccess('All emails sent successfully and orders marked as reminded - FINISH PROCESS');
+        });
 }
 
 function setBackOfficeToken(){

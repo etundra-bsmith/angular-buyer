@@ -11,7 +11,6 @@
     OrderAdmin - to patch xp on order (lets us know user has been emailed a reminder)
 */
 
-//TODO: modify heroku variables to ClientSecret
 module.exports = {
     ClientID: process.env.BACKEND_CLIENT,
     ClientSecret: process.env.CLIENT_SECRET,
