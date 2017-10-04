@@ -93,10 +93,9 @@ function emailUsers(emailData){
     cLog('Building up emails');
     var queue = [];
     _.each(emailData, function(email){
-        // var arrayRecipients = _.map(email.Recipients, function(email){
-        //     return {email: 'cramirez@four51.com', type: 'to'};
-        // });
-        var arrayRecipients = [{email: 'cramirez@four51.com', type: 'to'}];
+        var arrayRecipients = _.map(email.Recipients, function(email){
+            return {email: email, type: 'to'};
+        });
         var datesubmitted = new Date(email.Order.DateSubmitted);
         var message = {
             to: arrayRecipients,
