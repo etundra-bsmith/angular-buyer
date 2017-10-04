@@ -9,6 +9,34 @@ var mandrill = require('mandrill-api/mandrill');
 var mandrillConfig = require('./routes/config/mandrill');
 var mandrill_client = new mandrill.Mandrill(mandrillConfig.apiKey);
 
+/* * * Documentation * * *
+
+This scheduled process looks for any orders that have been on hold 
+for more than 48 hours and sends an email reminder to the approving users
+ignoring any user that has already been reminded. It gets kicked off hourly 
+by a free Heroku add-on called Heroku-scheduler - https://elements.heroku.com/addons/scheduler
+
+for security purposes a backoffice user with limited roles is used
+for this task. configuration of the user is stored remotely on heroku 
+(via config variables). More information about what is required to configure 
+the back-office user can be found in ./routes/config/back-office-user.js
+
+troubleshooting is pretty easy just run 'scheduled-approvals-check.js'
+while in the project directory. 
+
+If you need to run the deployed instance of the code locally you can do so as 
+well - you'll just need to make sure you have the heroku cli installed 
+(https://devcenter.heroku.com/articles/heroku-cli) then just enter the following 
+command:
+
+`heroku run command --app appname`
+
+at the time of writing it would be the following although appname might change
+
+'heroku run node scheduled-approvals-check --app caferio-production'
+
+/* * * * * * * * * * * * */
+
 cLog('Verifying Config');
 if(!boconfig.ClientID) return cError('Missing ClientID for back office user from routes/config/back-office-user - EXIT PROCESS');
 if(!boconfig.ClientSecret) return cError('Missing ClientSecret for back office user from routes/config/back-office-user - EXIT PROCESS');

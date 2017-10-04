@@ -8,7 +8,7 @@
     Unsubmitted OrderReader - to get a list of orders with a status 'AwaitingApproval'
     UserGroupReader - to get a list of approval user groups
     BuyerUserReader - to get a list of users within approval user groups
-    OrderAdmin - to patch xp on order (lets us know user has been emailed a reminder)
+    OrderAdmin - to patch xp on order (flags an order has already been emailed a reminder)
 */
 
 module.exports = {
