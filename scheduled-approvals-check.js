@@ -9,12 +9,10 @@ var mandrill = require('mandrill-api/mandrill');
 var mandrillConfig = require('./routes/config/mandrill');
 var mandrill_client = new mandrill.Mandrill(mandrillConfig.apiKey);
 
-cLog('Preliminary Diagnostics: Checking Config');
+cLog('Verifying Config');
 if(!boconfig.ClientID) return cError('Missing ClientID for back office user from routes/config/back-office-user - EXIT PROCESS');
 if(!boconfig.ClientSecret) return cError('Missing ClientSecret for back office user from routes/config/back-office-user - EXIT PROCESS');
 if(!boconfig.scope) return cError('Missing scope for back office user from routes/config/back-office-user - EXIT PROCESS');
-cSuccess('Config correct - CONTINUE');
-
 
 return setBackOfficeToken()
     .then(getOrdersAwaitingApproval)
@@ -27,7 +25,7 @@ return setBackOfficeToken()
     });
 
 function getOrdersAwaitingApproval(){
-    cLog('Getting orders that have been on hold for 48 hours and have no reminders sent');
+    cLog('Retrieving orders that have been on hold > 48 hours and have no reminders sent');
     var now = new Date();
     now.setHours(now.getHours() - 48);
     var fortyEightHoursAgo = now.toISOString();
@@ -42,11 +40,13 @@ function getOrdersAwaitingApproval(){
     })
     .then(function(orderList){
         var orderids = _.pluck(orderList.Items, 'ID').join(',');
-        cSuccess(orderList.Meta.TotalCount + ' Orders Found', 'orderIDs: ' + orderids);
-        return orderList;
-    })
-    .catch(function(){
-        return cError('List call failed - EXIT PROCESS');
+        if(orderids.length === 0){
+            cSuccess('No orders were found - EXIT PROCESS');
+            return $q.reject();
+        } else {
+            cSuccess(orderList.Meta.TotalCount + ' Orders Found', 'orderIDs: ' + orderids);
+            return orderList;
+        }
     });
 }
 
@@ -74,20 +74,19 @@ function getApprovingUsers(orders){
                                 })
                                 .catch(function(){
                                     cError('Failed to retrieve Users in Approving Group: ' + approval.ApprovingGroupID);
+                                    return $q.reject();
                                 });
                         }());
                     });
                     return $q.all(usersQueue);
                 })
                 .catch(function(){
-                    return cError('Failed to retrieve Approvals for ' + order.ID);
+                    cError('Failed to retrieve Approvals for ' + order.ID);
+                    return $q.reject();
                 });
         }());
     });
-    return $q.all(approvalQueue)
-        .then(function(){
-            return emailData;
-        });
+    return $q.all(approvalQueue);
 }
 
 function emailUsers(emailData){
@@ -118,9 +117,8 @@ function emailUsers(emailData){
                     cSuccess('Emails successfully sent to: ' + email.Recipients.join(','));
                     dfd.resolve(result);
                 },
-                function(error) {
+                function() {
                     cError('Emails not sent to: ' + email.Recipients.join(','));
-                    dfd.reject(error);
                 }
             );
             return dfd.promise;
@@ -146,12 +144,12 @@ function markComplete(emailData){
     });
     return $q.all(queue)
         .then(function(){
-            cSuccess('All emails sent successfully and orders marked as reminded - FINISH PROCESS');
+            cSuccess('PROCESS COMPLETE');
         });
 }
 
 function setBackOfficeToken(){
-    cLog('Retrieving back-office token');
+    cLog('Authenticating');
     //TODO: there is a bug in javascript sdk that doesnt allow us
     //to use OrderCloudSDK.Auth.ClientCredentials log in. once this
     //is fixed replace with that call
@@ -174,7 +172,6 @@ function setBackOfficeToken(){
                 cError('Auth Error - confirm back-office-user information is correct', msg);
                 deferred.reject(msg);
             } else {
-                cSuccess('Token retrieved');
                 var token = JSON.parse(body)['access_token'];
                 OrderCloudSDK.SetToken(token);
                 deferred.resolve();

@@ -12,8 +12,8 @@
 */
 
 module.exports = {
-    ClientID: process.env.BACKEND_CLIENT,
-    ClientSecret: process.env.CLIENT_SECRET,
+    ClientID: process.env.BACKEND_CLIENT || '9E09761E-D5F8-42EF-B511-552D540AE31B',
+    ClientSecret: process.env.CLIENT_SECRET || 'w3bM3th0dsCli3nt',
     scope: ['UnsubmittedOrderReader', 'UserGroupReader', 'BuyerUserReader', 'OrderAdmin']
 };
 
