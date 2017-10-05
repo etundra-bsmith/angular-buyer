@@ -7,7 +7,7 @@ function CategoryBrowseConfig($stateProvider){
     $stateProvider
         .state('categoryBrowse', {
             parent:'base',
-            url:'/browse/categories?categoryID?productPage?categoryPage?pageSize?sortBy?filters',
+            url:'/browse/categories?categoryID&catalogID&productPage&categoryPage&pageSize&sortBy&filters',
             templateUrl:'categoryBrowse/templates/categoryBrowse.tpl.html',
             controller:'CategoryBrowseCtrl',
             controllerAs:'categoryBrowse',
@@ -15,10 +15,63 @@ function CategoryBrowseConfig($stateProvider){
                 Parameters: function($stateParams, ocParameters) {
                     return ocParameters.Get($stateParams);
                 },
-                CategoryList: function(OrderCloudSDK, Parameters) {
-                    if(Parameters.categoryID) { Parameters.filters ? Parameters.filters.ParentID = Parameters.categoryID : Parameters.filters = {ParentID:Parameters.categoryID}; } 
+                CategoryList: function(OrderCloudSDK, Parameters, Catalogs, $q) {
+                    if(!Parameters.filters) Parameters.filters = {};
+                    var queue = [];
+                    var isTopLevel = !Parameters.categoryID && !Parameters.catalogID;
+
                     Parameters.page = Parameters.categoryPage;
-                    return OrderCloudSDK.Me.ListCategories(Parameters);
+                    if(isTopLevel) { 
+                        //to get all categories we'll need to do a list call from each catalog
+                        _.each(Catalogs.Items, function(catalog){
+                            Parameters.filters.catalogID = catalog.ID;
+                            queue.push(function(){
+                                return OrderCloudSDK.Me.ListCategories(Parameters)
+                                    .then(function(categoryList){
+                                        _.each(categoryList.Items, function(category){
+                                            category.catalogID = catalog.ID;
+                                        });
+                                        return categoryList;
+                                    });
+                            }());
+                        });
+                    } else {
+                        //they are in subview only need to get results for one catalog list call
+                        Parameters.filters.ParentID = Parameters.categoryID;
+                        queue.push(function(){
+                            return OrderCloudSDK.Me.ListCategories(Parameters)
+                                .then(function(categoryList){
+                                    _.each(categoryList.Items, function(category){
+                                        category.catalogID = Parameters.catalogID;
+                                    });
+                                    return categoryList;
+                                });
+                        }());
+                    }
+
+                    return $q.all(queue)
+                        .then(function(results){
+                            if(isTopLevel){
+                                delete Parameters.filters.catalogID;
+                                var Items = [];
+                                var Meta = {
+                                    'Page': 1,
+                                    'PageSize': results[0].MetaPageSize,
+                                    'TotalCount': 0,
+                                    'TotalPages': 1,
+                                    'ItemRange': [1]
+
+                                };
+                                _.each(results, function(result){
+                                    Meta.TotalCount = Meta.TotalCount + result.Meta.TotalCount;
+                                    Meta.ItemRange[1] = Meta.TotalCount > Meta.PageSize ? Meta.PageSize : Meta.TotalCount;
+                                    Items = Items.concat(result.Items);
+                                });
+                                return {Items: Items, Meta: Meta};
+                            } else {
+                                return results[0];
+                            }
+                        });
                 },
                 ProductList: function(OrderCloudSDK, Parameters) {
                     if(Parameters && Parameters.filters && Parameters.filters.ParentID) {
@@ -34,7 +87,8 @@ function CategoryBrowseConfig($stateProvider){
                         var parameters = {
                             depth: 'all',
                             filters: {
-                                ID: Parameters.categoryID
+                                ID: Parameters.categoryID,
+                                catalogID: Parameters.catalogID
                             }
                         };
                         return OrderCloudSDK.Me.ListCategories(parameters)
@@ -66,7 +120,8 @@ function CategoryBrowseController($state, ocParameters, CategoryList, ProductLis
         $state.go('.', ocParameters.Create(vm.parameters, resetPage));
     };
 
-    vm.updateCategoryList = function(category){
+    vm.updateCategoryList = function(category, catalogID){
+        vm.parameters.catalogID = catalogID;
         vm.parameters.categoryID = category;
         vm.filter(true);
     };
