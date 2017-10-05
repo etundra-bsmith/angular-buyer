@@ -5,7 +5,7 @@
         <b class="pull-right">{{categoryBrowse.getNumberOfResults('categoryList')}}</b><br>
         <div class="row l-category-grid">
             <div class="col-sm-6 col-md-3 col-lg-2 l-category-grid__item" ng-repeat="category in categoryBrowse.categoryList.Items">
-                <div class="c-category-card" ng-click="categoryBrowse.updateCategoryList(category.ID)">
+                <div class="c-category-card" ng-click="categoryBrowse.updateCategoryList(category.ID, category.catalogID)">
                     <div class="c-category-card__img-wrap ">
                         <img class="img-responsive c-category-card__img" ng-src="{{category.xp.image.URL || 'assets/images/image-unavailable.jpg'}}">
                     </div>

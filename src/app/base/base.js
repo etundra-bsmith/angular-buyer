@@ -25,8 +25,8 @@ function BaseConfig($stateProvider) {
                         return buyerList.Items[0];
                     });
             },
-            Catalog: function(OrderCloudSDK, Buyer){
-                return OrderCloudSDK.Catalogs.Get(Buyer.DefaultCatalogID);
+            Catalogs: function(OrderCloudSDK){
+                return OrderCloudSDK.Me.ListCatalogs();
             },
             CurrentUser: function(OrderCloudSDK) {
                 return OrderCloudSDK.Me.Get();
