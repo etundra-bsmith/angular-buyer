@@ -23,16 +23,16 @@ function ProductBrowseConfig($urlRouterProvider, $stateProvider) {
                 Parameters: function ($stateParams, ocParameters) {
                     return ocParameters.Get($stateParams);
                 },
-                CategoryList: function(ocProductBrowse, Catalog) {
-                    return ocProductBrowse.ListCategories(Catalog);
+                CategoryList: function(ocProductBrowse, Catalogs) {
+                    return ocProductBrowse.ListCategories(Catalogs);
                 },
-                CategoryTree: function(ocProductBrowse, CategoryList, Catalog) {
-                    return ocProductBrowse.GetCategoryTree(CategoryList, Catalog);
+                CategoryTree: function(ocProductBrowse, CategoryList) {
+                    return ocProductBrowse.GetCategoryTree(CategoryList);
                 }
             }
         })
         .state('productBrowse.products', {
-            url: '/products?categoryID?favorites?search?page?pageSize?searchOn?sortBy?depth',
+            url: '/products?categoryID&catalogID&favorites&search&page&pageSize&searchOn&sortBy&depth',
             templateUrl: 'productBrowse/templates/productView.tpl.html',
             controller: 'ProductViewCtrl',
             controllerAs: 'productView',
@@ -45,6 +45,9 @@ function ProductBrowseConfig($urlRouterProvider, $stateProvider) {
                     if (Parameters.favorites && CurrentUser.xp.FavoriteProducts) {
                         angular.extend(filters, {ID:CurrentUser.xp.FavoriteProducts.join('|')});
                     } 
+                    if(Parameters.catalogID){
+                        filters.catalogID = Parameters.catalogID;
+                    }
                     Parameters.filters = filters;
                     Parameters.depth = 'all';
                     return OrderCloudSDK.Me.ListProducts(Parameters);
@@ -73,7 +76,8 @@ function ProductBrowseController($state, $uibModal, CategoryList, CategoryTree, 
     };
 
     vm.treeConfig.selectNode = function(node) {
-        $state.go('productBrowse.products', {categoryID:node.ID, page:''});
+        console.log('NODE', node);
+        $state.go('productBrowse.products', {categoryID:node.ID, page:'', catalogID: node.catalogID});
     };
 
     //Initiate breadcrumbs is triggered by product list view (child state "productBrowse.products")
