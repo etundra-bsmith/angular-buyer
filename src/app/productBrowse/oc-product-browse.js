@@ -9,7 +9,7 @@ function ocProductBrowseService($q, OrderCloudSDK, ocUtility){
     };
 
     function _listCategories(Catalogs){
-        var timeLastUpdated = 1507229588258;
+        var timeLastUpdated = 1507233961425;
         function onCacheEmpty(){
             var queue = [];
             _.each(Catalogs.Items, function(catalog){
@@ -36,7 +36,7 @@ function ocProductBrowseService($q, OrderCloudSDK, ocUtility){
     }
 
     function _getCategoryTree(CategoryList){
-        var timeLastUpdated = 1507229588258;
+        var timeLastUpdated = 1507233961425;
         function onCacheEmpty(){
             return _buildTree(CategoryList);
         }
